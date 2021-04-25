@@ -1,0 +1,57 @@
+SSRF漏洞   （server-side request forge，服务端请求伪造）
+作用：攻击者让服务端发起构造的指定请求链接造成的漏洞
+
+看了很多资料，对于这个漏洞存在的判断与否，还是没有太多的了解，目前了解的就是：file_get_contents()、curl()、fsocksopen()、fopen()，这些函数的存在可能会出现这个漏洞，或者出现在调用外部资源的地方，可以利用http://，file://，dict://协议读取一下。
+
+在CTF中的SSRF
+常用绕过方式
+1、302跳转：     xip.io  nip.io sslip.io这些网站   访问任意子域名，都会重定向此域名。比如http://127.0.0.1.xip,io  实际上访问    http://127.0.0.1     可以过那些判断整个127.0.0.1的WAF
+
+2、短地址跳转：利用4m.cn这个网站，进行短地址跳转，其实也就是302跳转，不过变了域名。
+
+3、进制的转换：用不同的进制代替IP地址，十进制：2130706433 八进制：017700000001 十六进制：0x7F000001  这些都代表127.0.0.1
+
+4、利用DNS解析：自己有域名的情况下，可以设置A记录来指向127.0.0.1
+
+5、@绕过：http://www.baidu.com@127.0.0.1与http://127.0.0.1请求是相同的。@前面可以是任意东西
+	1. http://localhost/
+	2. http://0/
+	3. http://[0:0:0:0:0:ffff:127.0.0.1]/
+	4. http://[::]:80/
+	5. http://127。0。0。1/
+	6. http://①②⑦.⓪.⓪.①
+	7. http://127.1/
+	8. http://127.00000.00000.001/
+
+
+	第1行localhost就是代指127.0.0.1
+
+	第2行中0在window下代表0.0.0.0，而在liunx下代表127.0.0.1
+
+	第3行指向127.0.0.1，在liunx下可用，window测试了下不行
+
+	第4行指向127.0.0.1，在liunx下可用，window测试了下不行
+
+	第5行用中文句号绕过
+
+	第6行用的是Enclosed alphanumerics方法绕过，英文字母以及其他一些可以网上找找
+
+	第7.8行中0的数量多一点少一点都没影响，最后还是会指向127.0.0.1
+常用为http://127.1/  与    http://0/   主要绕过限制长度WAF
+6、不存在协议头绕过：   file_get_contents() 函数在遇到不认识的伪协议头时候会将伪协议头当做文件夹，造成目录穿越漏洞，这时候只需不断往上跳转目录即可读到根目录的文件。
+	httpsssss://../../../../../../etc/passwd
+	httpsssss://abc../../../../../../etc/passwd
+7、URL解析问题：
+关于readfile和parse_url解析差异
+https://www.blackhat.com/docs/us-17/thursday/us-17-Tsai-A-New-Era-Of-SSRF-Exploiting-URL-Parser-In-Trending-Programming-Languages.pdf      以后一定有道着看，现在只看的懂猫
+
+8、gopherus攻击Redis与Mysql（均无口令）
+
+9、利用gopher协议伪造发送请求，但是还没有利用的题目，具体操作不怎么清楚，以后看下师傅们的wp
+
+10、PHP-FPM攻击：利用FastCGI协议，但具体的操作还是有些蒙圈，等一个web师傅贴贴。
+
+11、DNS-rebinding   可以利用http://ceye.io/上的dns rebinding工具，第一个网站写一个正常的，第二个写内网地址，有几率可以返回地址。
+
+主要从该网站学习这个，入门的归纳挺全的：
+https://hetian.blog.csdn.net/article/details/109252839

